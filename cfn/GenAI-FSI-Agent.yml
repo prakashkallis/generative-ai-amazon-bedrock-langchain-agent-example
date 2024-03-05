@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "GenAI Financial Services Agent powered by Amazon Lex, Amazon Bedrock, Amazon DynamoDB, and Amazon Kendra"
+Description: "Echo IT Services Agent powered by Amazon Lex, Amazon Bedrock, Amazon DynamoDB, and Amazon Kendra"
 Metadata:
   LICENSE: >-
     Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -29,17 +29,10 @@ Metadata:
           - BedrockLangChainPDFRWLayerArn
           - CfnresponseLayerArn
       - Label:
-          default: GitHub Secrets Manager Details
-        Parameters:
-          - GitHubTokenSecretName
-      - Label:
           default: Kendra Web Crawler Root Domain
         Parameters:
           - KendraWebCrawlerUrl
-      - Label:
-          default: Amplify Source Repository
-        Parameters:
-          - AmplifyRepository
+
     ParameterLabels:
       S3ArtifactBucket:
         default: your-code-assets-bucket-name
@@ -53,12 +46,6 @@ Metadata:
         default: bedrock-layer-arn
       CfnresponseLayerArn:
         default: cfnresponse-layer-arn
-      GitHubTokenSecretName:
-        default: your-github-token-secret-name
-      KendraWebCrawlerUrl:
-        default: your-root-domain
-      AmplifyRepository:
-        default: https://github.com/aws-samples/generative-ai-amazon-bedrock-langchain-agent-example
 
 Parameters:
   S3ArtifactBucket:
@@ -85,19 +72,6 @@ Parameters:
     Description: cfnresponse Lambda layer ARN
     Type: String
     Default: cfnresponse-layer-arn
-  GitHubTokenSecretName:
-    Description: GitHub PAT. 
-    Type: String
-    NoEcho: true
-    Default: your-github-token-secret-name
-  KendraWebCrawlerUrl:
-    Description: Seed URL for Kendra WebCrawler. 
-    Type: String
-    Default: your-root-domain
-  AmplifyRepository:
-    Description: Source repository for AWS Amplify frontend. 
-    Type: String
-    Default: https://github.com/aws-samples/generative-ai-amazon-bedrock-langchain-agent-example
 
 Resources:
   UserPendingAccountsTable:
@@ -275,62 +249,6 @@ Resources:
     Properties:
       ServiceToken: !GetAtt DataLoaderFunction.Arn
 
-  AmplifyRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${AWS::StackName}-AmplifyRole
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - amplify.amazonaws.com
-          Action:
-          - sts:AssumeRole
-      Policies:
-      - PolicyName: !Sub ${AWS::StackName}-Amplify
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
-            Action: 
-            - 'amplify:Create*'
-            - 'amplify:Get*'
-            - 'amplify:List*'
-            - 'amplify:Start*'
-            - 'amplify:Stop*'
-            - 'amplify:Update*'
-            Resource: '*'
-
-  AmplifyApp:
-    Type: AWS::Amplify::App
-    Properties:
-      Name: !Sub ${AWS::StackName}-AnyCompany-Website
-      Repository: !Ref AmplifyRepository
-      BuildSpec: |
-        frontend:
-          phases:
-            # IMPORTANT - Please verify your build commands
-            build:
-              commands: []
-          artifacts:
-            # IMPORTANT - Please verify your build output directory
-            baseDirectory: ./frontend/
-            files:
-              - '**/*'
-          cache:
-            paths: []
-      AccessToken: !Sub "{{resolve:secretsmanager:${GitHubTokenSecretName}}}"
-      Description: AnyCompany website
-      IAMServiceRole: !GetAtt AmplifyRole.Arn
-
-  AmplifyBranch:
-    Type: AWS::Amplify::Branch
-    Properties:
-      AppId: !GetAtt AmplifyApp.AppId
-      BranchName: main
-
   KendraLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -490,18 +408,12 @@ Resources:
           S3ObjectKey: !Ref LexBotS3Key
         DataPrivacy: 
           ChildDirected: false
-        Description: 'Financial Services Agent'
+        Description: 'Echo IT Services Agent'
         IdleSessionTTLInSeconds: 900
         RoleArn: !GetAtt LexBotRole.Arn
 
 
 Outputs:
-  AmplifyDemoWebsite:
-    Value: !Join ['', ['main.', !GetAtt AmplifyApp.DefaultDomain]]
-  AmplifyAppID:
-    Value: !GetAtt AmplifyApp.AppId
-  AmplifyBranch:
-    Value: !GetAtt AmplifyBranch.BranchName
   KendraIndexID:
     Value: !GetAtt KendraIndex.Id
   KendraS3DataSourceID:
