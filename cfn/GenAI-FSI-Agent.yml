@@ -28,10 +28,6 @@ Metadata:
           - LexBotS3Key
           - BedrockLangChainPDFRWLayerArn
           - CfnresponseLayerArn
-      - Label:
-          default: Kendra Web Crawler Root Domain
-        Parameters:
-          - KendraWebCrawlerUrl
 
     ParameterLabels:
       S3ArtifactBucket:
@@ -353,25 +349,6 @@ Resources:
           InclusionPatterns: 
             - "agent/assets/*.csv"
 
-  KendraWebCrawler:
-    DependsOn: KendraIndex
-    Type: AWS::Kendra::DataSource
-    Properties:
-      Name: !Sub ${AWS::StackName}-WebCrawler
-      Type: WEBCRAWLER
-      IndexId: !GetAtt KendraIndex.Id
-      RoleArn: !GetAtt KendraDataSourceRole.Arn
-      DataSourceConfiguration:
-        WebCrawlerConfiguration: 
-            CrawlDepth: 3
-            MaxContentSizePerPageInMegaBytes: 50
-            MaxLinksPerPage: 20
-            MaxUrlsPerMinuteCrawlRate: 100
-            Urls: 
-              SeedUrlConfiguration:
-                SeedUrls: 
-                  - !Ref KendraWebCrawlerUrl
-                WebCrawlerMode: SUBDOMAINS
 
   LexBotRole:
     Type: AWS::IAM::Role
@@ -418,8 +395,6 @@ Outputs:
     Value: !GetAtt KendraIndex.Id
   KendraS3DataSourceID:
     Value: !GetAtt KendraS3DataSource.Id
-  KendraWebCrawlerDataSourceID:
-    Value: !GetAtt KendraWebCrawler.Id
   LambdaARN:
     Value: !GetAtt AgentHandlerFunction.Arn
   LexBotID:
